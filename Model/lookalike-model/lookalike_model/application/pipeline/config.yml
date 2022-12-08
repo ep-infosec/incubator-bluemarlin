@@ -1,0 +1,33 @@
+product_tag: 'lookalike_application'
+pipeline_tag: '12132021'
+score_generator:
+    input:
+        aid_table: "lookalike_11192021_trainready"
+        keywords_table: "lookalike_11192021_keywords"
+        din_model_tf_serving_url: "http://10.193.217.126:8501/v1/models/lookalike_1119:predict"
+        din_model_length: 20
+        extend: 2000
+        alg: "euclidean" ##### currently just support "euclideand" and "dot"
+    output:
+        score_table:  "{product_tag}_{pipeline_tag}_score"
+    normalize: False       
+score_vector:
+    keywords_table: "lookalike_11192021_keywords"
+    score_table:  "{product_tag}_{pipeline_tag}_score"
+    score_vector_table: "{product_tag}_{pipeline_tag}_score_vector"
+    aid_bucket_size: 100
+    aid_bucket_step: 10
+# Adds alpha_aid_bucket partition to allow for finer control of step size in top_n_similarity stage
+score_vector_rebucketing:
+    aid_bucket_size: 100
+    aid_bucket_step: 10
+    alpha_aid_bucket_size: 10  # The number of buckets to allocate for the alpha_aid_bucket column
+    score_vector_alpha_table: "{product_tag}_{pipeline_tag}_score_vector_alpha"
+top_n_similarity:
+    aid_bucket_size: 100       # Total number of alpha buckets to process similarity of
+    load_bucket_step: 20       # Number of alpha buckets to load into index at a time
+    search_bucket_step: 50     # Number of alpha buckets to process top N at a time
+    top_n: 10                  # Number of nearest neighbors to store for each aid
+    index_factory_string: "IVF256,Flat"  # See https://github.com/facebookresearch/faiss/wiki/The-index-factory for factory strings
+    similarity_table: "{product_tag}_{pipeline_tag}_similarity"
+    
